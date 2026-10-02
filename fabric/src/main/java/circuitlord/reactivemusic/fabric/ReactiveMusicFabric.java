@@ -4,77 +4,134 @@ import circuitlord.reactivemusic.ReactiveMusic;
 import circuitlord.reactivemusic.SongPicker;
 import circuitlord.reactivemusic.config.ModConfig;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+//? if >=26 {
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+//?} else {
+/*import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+*///?}
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.minecraft.client.MinecraftClient;
+//? if >=26 {
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+//?} else {
+/*import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+*///?}
 
 public class ReactiveMusicFabric implements ClientModInitializer {
+
+    // Fabric API renamed ClientCommandManager to ClientCommands in the 26.x line
+    //? if >=26 {
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> literal(String name) {
+        return ClientCommands.literal(name);
+    }
+    //?} else {
+    /*private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> literal(String name) {
+        return ClientCommandManager.literal(name);
+    }
+    *///?}
 
     @Override
     public void onInitializeClient() {
         ReactiveMusic.init();
         ReactiveMusic.initClient();
 
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(ClientCommandManager.literal("reactivemusic")
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(literal("reactivemusic")
                 .executes(context -> {
-                    MinecraftClient mc = context.getSource().getClient();
+                    //? if >=26 {
+                    Minecraft mc = context.getSource().getClient();
+                    Screen screen = ModConfig.createScreen(mc.gui.screen());
+                    mc.execute(() -> mc.gui.setScreen(screen));
+                    //?} else {
+                    /*MinecraftClient mc = context.getSource().getClient();
                     Screen screen = ModConfig.createScreen(mc.currentScreen);
                     mc.send(() -> mc.setScreen(screen));
+                    *///?}
                     return 1;
                 })
 
-                .then(ClientCommandManager.literal("logBlockCounter")
+                .then(literal("logBlockCounter")
                         .executes(context -> {
                             SongPicker.queuedToPrintBlockCounter = true;
                             return 1;
                         })
                 )
 
-                .then(ClientCommandManager.literal("toggleSoundEventLogging")
+                .then(literal("toggleSoundEventLogging")
                         .executes(context -> {
                             ReactiveMusic.printSoundEvents = !ReactiveMusic.printSoundEvents;
                             return 1;
                         })
                 )
 
-                .then(ClientCommandManager.literal("blacklistDimension")
+                .then(literal("blacklistDimension")
                         .executes(context -> {
-                            String key = context.getSource().getClient().world.getRegistryKey().getValue().toString();
+                            //? if >=26 {
+                            String key = context.getSource().getClient().level.dimension().identifier().toString();
+                            //?} else {
+                            /*String key = context.getSource().getClient().world.getRegistryKey().getValue().toString();
+                            *///?}
 
+                            //? if >=26 {
                             if (ReactiveMusic.config.blacklistedDimensions.contains(key)) {
+                                context.getSource().sendFeedback(Component.literal("[ReactiveMusic]: " + key + " was already in blacklist."));
+                                return 1;
+                            }
+
+                            context.getSource().sendFeedback(Component.literal("[ReactiveMusic]: Added " + key + " to blacklist."));
+                            //?} else {
+                            /*if (ReactiveMusic.config.blacklistedDimensions.contains(key)) {
                                 context.getSource().sendFeedback(Text.literal("[ReactiveMusic]: " + key + " was already in blacklist."));
                                 return 1;
                             }
 
                             context.getSource().sendFeedback(Text.literal("[ReactiveMusic]: Added " + key + " to blacklist."));
+                            *///?}
                             ReactiveMusic.config.blacklistedDimensions.add(key);
                             ModConfig.saveConfig();
                             return 1;
                         })
                 )
 
-                .then(ClientCommandManager.literal("unblacklistDimension")
+                .then(literal("unblacklistDimension")
                         .executes(context -> {
-                            String key = context.getSource().getClient().world.getRegistryKey().getValue().toString();
+                            //? if >=26 {
+                            String key = context.getSource().getClient().level.dimension().identifier().toString();
+                            //?} else {
+                            /*String key = context.getSource().getClient().world.getRegistryKey().getValue().toString();
+                            *///?}
 
+                            //? if >=26 {
                             if (!ReactiveMusic.config.blacklistedDimensions.contains(key)) {
+                                context.getSource().sendFeedback(Component.literal("[ReactiveMusic]: " + key + " was not in blacklist."));
+                                return 1;
+                            }
+
+                            context.getSource().sendFeedback(Component.literal("[ReactiveMusic]: Removed " + key + " from blacklist."));
+                            //?} else {
+                            /*if (!ReactiveMusic.config.blacklistedDimensions.contains(key)) {
                                 context.getSource().sendFeedback(Text.literal("[ReactiveMusic]: " + key + " was not in blacklist."));
                                 return 1;
                             }
 
                             context.getSource().sendFeedback(Text.literal("[ReactiveMusic]: Removed " + key + " from blacklist."));
+                            *///?}
                             ReactiveMusic.config.blacklistedDimensions.remove(key);
                             ModConfig.saveConfig();
                             return 1;
                         })
                 )
 
-                .then(ClientCommandManager.literal("toggleLogging")
+                .then(literal("toggleLogging")
                         .executes(context -> {
                             ReactiveMusic.chatLoggingEnabled = !ReactiveMusic.chatLoggingEnabled;
-                            context.getSource().sendFeedback(Text.literal("[ReactiveMusic]: Logging enabled: " + ReactiveMusic.chatLoggingEnabled));
+                            //? if >=26 {
+                            context.getSource().sendFeedback(Component.literal("[ReactiveMusic]: Logging enabled: " + ReactiveMusic.chatLoggingEnabled));
+                            //?} else {
+                            /*context.getSource().sendFeedback(Text.literal("[ReactiveMusic]: Logging enabled: " + ReactiveMusic.chatLoggingEnabled));
+                            *///?}
                             return 1;
                         })
                 )

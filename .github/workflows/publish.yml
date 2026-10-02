@@ -60,6 +60,9 @@ jobs:
               {"loader": "fabric", "mc": "1.21.1", "game_versions": ">=1.21 <=1.21.1", "curseforge_game_versions": "1.21.1", "java": 21},
               {"loader": "neoforge", "mc": "1.21.1", "game_versions": ">=1.21 <=1.21.1", "curseforge_game_versions": "1.21.1", "java": 21},
               {"loader": "fabric", "mc": "1.21.11", "game_versions": ">=1.21.9 <=1.21.12", "curseforge_game_versions": "1.21.11", "java": 21},
+              {"loader": "fabric", "mc": "26.2", "game_versions": ">=26.2 <26.3", "curseforge_game_versions": "26.2", "java": 25},
+              {"loader": "forge", "mc": "26.2", "game_versions": "[26.2,26.3)", "curseforge_game_versions": "26.2", "java": 25},
+              {"loader": "neoforge", "mc": "26.2", "game_versions": "[26.2,26.3)", "curseforge_game_versions": "26.2", "java": 25},
           ]
 
           selected_loader = os.environ["SELECTED_LOADER"]
@@ -80,11 +83,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 21
+      - name: Set up Java ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ matrix.java }}
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4

@@ -1,13 +1,20 @@
 package circuitlord.reactivemusic;
 
 
-import net.minecraft.client.MinecraftClient;
+//? if >=26 {
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.network.chat.contents.TranslatableContents;
+//?} else {
+/*import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.text.TranslatableTextContent;
+*///?}
 import rm_javazoom.jl.player.AudioDevice;
 import rm_javazoom.jl.player.JavaSoundAudioDevice;
 import rm_javazoom.jl.player.advanced.AdvancedPlayer;
-import net.minecraft.text.TranslatableTextContent;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -157,7 +164,32 @@ public class PlayerThread extends Thread {
 	
 	public void processRealGain() {
 
-		var client = MinecraftClient.getInstance();
+		//? if >=26 {
+		var client = Minecraft.getInstance();
+
+		Options options = Minecraft.getInstance().options;
+
+		boolean musicOptionsOpen = false;
+
+		// Try to find the music options menu
+		TranslatableContents ScreenTitleContent = null;
+		var screen = client.gui != null ? client.gui.screen() : null;
+		if (screen != null && screen.getTitle() != null && screen.getTitle().getContents() != null
+			&& screen.getTitle().getContents() instanceof TranslatableContents) {
+
+			ScreenTitleContent = (TranslatableContents) screen.getTitle().getContents();
+
+			if (ScreenTitleContent != null) {
+				musicOptionsOpen = ScreenTitleContent.getKey().equals("options.sounds.title");
+			}
+		}
+
+
+		boolean doQuietMusic =  client.isPaused()
+				&& client.level != null
+				&& !musicOptionsOpen;
+		//?} else {
+		/*var client = MinecraftClient.getInstance();
 
 		GameOptions options = MinecraftClient.getInstance().options;
 
@@ -179,13 +211,18 @@ public class PlayerThread extends Thread {
 		boolean doQuietMusic =  client.isPaused()
 				&& client.world != null
 				&& !musicOptionsOpen;
+		*///?}
 
 
 		float targetQuietMusicPercentage = doQuietMusic ? QUIET_VOLUME_PERCENTAGE : 1.0f;
         quietPercentage = MyMath.lerpConstant(quietPercentage, targetQuietMusicPercentage, QUIET_VOLUME_LERP_RATE);
 
-		
-		float minecraftGain = options.getSoundVolume(SoundCategory.MUSIC) * options.getSoundVolume(SoundCategory.MASTER);
+
+		//? if >=26 {
+		float minecraftGain = options.getSoundSourceVolume(SoundSource.MUSIC) * options.getSoundSourceVolume(SoundSource.MASTER);
+		//?} else {
+		/*float minecraftGain = options.getSoundVolume(SoundCategory.MUSIC) * options.getSoundVolume(SoundCategory.MASTER);
+		*///?}
 
 		// my jank way of changing the volume curve to be less drastic
 		float minecraftDistFromMax = 1.0f - minecraftGain;

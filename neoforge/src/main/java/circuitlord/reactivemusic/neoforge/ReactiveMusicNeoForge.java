@@ -3,9 +3,15 @@ package circuitlord.reactivemusic.neoforge;
 import circuitlord.reactivemusic.ReactiveMusic;
 import circuitlord.reactivemusic.SongPicker;
 import circuitlord.reactivemusic.config.ModConfig;
-import net.minecraft.client.MinecraftClient;
+//? if >=26 {
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+//?} else {
+/*import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+*///?}
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModLoadingContext;
@@ -15,7 +21,11 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
-import static net.minecraft.server.command.CommandManager.literal;
+//? if >=26 {
+import static net.minecraft.commands.Commands.literal;
+//?} else {
+/*import static net.minecraft.server.command.CommandManager.literal;
+*///?}
 
 @Mod("reactivemusic")
 public class ReactiveMusicNeoForge {
@@ -39,9 +49,15 @@ public class ReactiveMusicNeoForge {
     public void onRegisterClientCommands(RegisterClientCommandsEvent event) {
         event.getDispatcher().register(literal("reactivemusic")
                 .executes(context -> {
-                    MinecraftClient mc = MinecraftClient.getInstance();
+                    //? if >=26 {
+                    Minecraft mc = Minecraft.getInstance();
+                    Screen screen = ModConfig.createScreen(mc.gui.screen());
+                    mc.execute(() -> mc.gui.setScreen(screen));
+                    //?} else {
+                    /*MinecraftClient mc = MinecraftClient.getInstance();
                     Screen screen = ModConfig.createScreen(mc.currentScreen);
                     mc.send(() -> mc.setScreen(screen));
+                    *///?}
                     return 1;
                 })
 
@@ -61,7 +77,18 @@ public class ReactiveMusicNeoForge {
 
                 .then(literal("blacklistDimension")
                         .executes(context -> {
-                            MinecraftClient mc = MinecraftClient.getInstance();
+                            //? if >=26 {
+                            Minecraft mc = Minecraft.getInstance();
+                            String key = mc.level.dimension().identifier().toString();
+
+                            if (ReactiveMusic.config.blacklistedDimensions.contains(key)) {
+                                mc.player.sendSystemMessage(Component.literal("[ReactiveMusic]: " + key + " was already in blacklist."));
+                                return 1;
+                            }
+
+                            mc.player.sendSystemMessage(Component.literal("[ReactiveMusic]: Added " + key + " to blacklist."));
+                            //?} else {
+                            /*MinecraftClient mc = MinecraftClient.getInstance();
                             String key = mc.world.getRegistryKey().getValue().toString();
 
                             if (ReactiveMusic.config.blacklistedDimensions.contains(key)) {
@@ -70,6 +97,7 @@ public class ReactiveMusicNeoForge {
                             }
 
                             mc.player.sendMessage(Text.literal("[ReactiveMusic]: Added " + key + " to blacklist."), false);
+                            *///?}
                             ReactiveMusic.config.blacklistedDimensions.add(key);
                             ModConfig.saveConfig();
                             return 1;
@@ -78,7 +106,18 @@ public class ReactiveMusicNeoForge {
 
                 .then(literal("unblacklistDimension")
                         .executes(context -> {
-                            MinecraftClient mc = MinecraftClient.getInstance();
+                            //? if >=26 {
+                            Minecraft mc = Minecraft.getInstance();
+                            String key = mc.level.dimension().identifier().toString();
+
+                            if (!ReactiveMusic.config.blacklistedDimensions.contains(key)) {
+                                mc.player.sendSystemMessage(Component.literal("[ReactiveMusic]: " + key + " was not in blacklist."));
+                                return 1;
+                            }
+
+                            mc.player.sendSystemMessage(Component.literal("[ReactiveMusic]: Removed " + key + " from blacklist."));
+                            //?} else {
+                            /*MinecraftClient mc = MinecraftClient.getInstance();
                             String key = mc.world.getRegistryKey().getValue().toString();
 
                             if (!ReactiveMusic.config.blacklistedDimensions.contains(key)) {
@@ -87,6 +126,7 @@ public class ReactiveMusicNeoForge {
                             }
 
                             mc.player.sendMessage(Text.literal("[ReactiveMusic]: Removed " + key + " from blacklist."), false);
+                            *///?}
                             ReactiveMusic.config.blacklistedDimensions.remove(key);
                             ModConfig.saveConfig();
                             return 1;
@@ -96,8 +136,13 @@ public class ReactiveMusicNeoForge {
                 .then(literal("toggleLogging")
                         .executes(context -> {
                             ReactiveMusic.chatLoggingEnabled = !ReactiveMusic.chatLoggingEnabled;
-                            MinecraftClient.getInstance().player.sendMessage(
+                            //? if >=26 {
+                            Minecraft.getInstance().player.sendSystemMessage(
+                                    Component.literal("[ReactiveMusic]: Logging enabled: " + ReactiveMusic.chatLoggingEnabled));
+                            //?} else {
+                            /*MinecraftClient.getInstance().player.sendMessage(
                                     Text.literal("[ReactiveMusic]: Logging enabled: " + ReactiveMusic.chatLoggingEnabled), false);
+                            *///?}
                             return 1;
                         })
                 )

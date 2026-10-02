@@ -1,6 +1,10 @@
 package circuitlord.reactivemusic.config;
 
-import net.minecraft.client.gui.screen.Screen;
+//? if >=26 {
+import net.minecraft.client.gui.screens.Screen;
+//?} else {
+/*import net.minecraft.client.gui.screen.Screen;
+*///?}
 
 /**
  * Legacy placeholder kept so old references/imports do not break.

@@ -1,14 +1,21 @@
 package circuitlord.reactivemusic.platform;
 
-//? if >=1.20 {
+//? if >=26 {
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.biome.Biome;
+//?} else if >=1.20 {
 /*import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
-*///?} else {
-import net.minecraft.tag.TagKey;
-import net.minecraft.util.registry.Registry;
-//?}
 import net.minecraft.util.Identifier;
 import net.minecraft.world.biome.Biome;
+*///?} else {
+/*import net.minecraft.tag.TagKey;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.world.biome.Biome;
+*///?}
 
 import java.util.ServiceLoader;
 
@@ -37,12 +44,14 @@ public interface BiomeTagHelper {
     default TagKey<Biome> createBiomeTagKey(String canonicalPath) {
         String remapped = remapTagPath(canonicalPath);
         if (remapped == null) return null;
-        //? if >=1.21 {
+        //? if >=26 {
+        return TagKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath(getTagNamespace(), remapped));
+        //?} else if >=1.21 {
         /*return TagKey.of(RegistryKeys.BIOME, Identifier.of(getTagNamespace(), remapped));
         *///?} else if >=1.20 {
         /*return TagKey.of(RegistryKeys.BIOME, new Identifier(getTagNamespace(), remapped));
         *///?} else {
-        return TagKey.of(Registry.BIOME_KEY, new Identifier(getTagNamespace(), remapped));
-        //?}
+        /*return TagKey.of(Registry.BIOME_KEY, new Identifier(getTagNamespace(), remapped));
+        *///?}
     }
 }

@@ -148,6 +148,9 @@ $Targets = @(
     [pscustomobject]@{ Minecraft = "1.21.1"; Loader = "fabric"; LoaderVersion = "0.16.14"; RuntimeLoader = "fabric"; Java = 21; FabricApi = "0.116.7+1.21.1" }
     [pscustomobject]@{ Minecraft = "1.21.1"; Loader = "neoforge"; LoaderVersion = "21.1.66"; RuntimeLoader = "neoforge"; Java = 21; FabricApi = $null }
     [pscustomobject]@{ Minecraft = "1.21.11"; Loader = "fabric"; LoaderVersion = "0.18.4"; RuntimeLoader = "fabric"; Java = 21; FabricApi = "0.141.3+1.21.11" }
+    [pscustomobject]@{ Minecraft = "26.2"; Loader = "fabric"; LoaderVersion = "0.19.3"; RuntimeLoader = "fabric"; Java = 25; FabricApi = "0.161.0+26.2" }
+    [pscustomobject]@{ Minecraft = "26.2"; Loader = "forge"; LoaderVersion = "65.1.0"; RuntimeLoader = "lexforge"; Java = 25; FabricApi = $null }
+    [pscustomobject]@{ Minecraft = "26.2"; Loader = "neoforge"; LoaderVersion = "26.2.0.88"; RuntimeLoader = "neoforge"; Java = 25; FabricApi = $null }
 )
 
 function Write-Status {

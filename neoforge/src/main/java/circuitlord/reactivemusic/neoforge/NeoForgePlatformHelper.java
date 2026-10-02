@@ -2,7 +2,11 @@ package circuitlord.reactivemusic.neoforge;
 
 import circuitlord.reactivemusic.platform.PlatformHelper;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLLoader;
+//? if >=26 {
+import net.neoforged.fml.loading.FMLEnvironment;
+//?} else {
+/*import net.neoforged.fml.loading.FMLLoader;
+*///?}
 import net.neoforged.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
@@ -25,6 +29,10 @@ public class NeoForgePlatformHelper implements PlatformHelper {
 
     @Override
     public boolean isDedicatedServer() {
-        return FMLLoader.getDist().isDedicatedServer();
+        //? if >=26 {
+        return FMLEnvironment.getDist().isDedicatedServer();
+        //?} else {
+        /*return FMLLoader.getDist().isDedicatedServer();
+        *///?}
     }
 }

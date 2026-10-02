@@ -22,17 +22,27 @@ repositories {
 
 dependencies {
     minecraft("com.mojang:minecraft:$minecraft")
-    mappings("net.fabricmc:yarn:$minecraft+build.${mod.dep("yarn_build")}:v2")
-    modImplementation("net.fabricmc:fabric-loader:${mod.dep("fabric_loader")}")
-
+    if (stonecutter.eval(minecraft, ">=26")) {
+        // Unobfuscated Minecraft: no mappings or remapped configurations exist
+        "implementation"("net.fabricmc:fabric-loader:${mod.dep("fabric_loader")}")
+    } else {
+        "mappings"("net.fabricmc:yarn:$minecraft+build.${mod.dep("yarn_build")}:v2")
+        "modImplementation"("net.fabricmc:fabric-loader:${mod.dep("fabric_loader")}")
+    }
 }
 
 java {
     withSourcesJar()
-    val java = if (stonecutter.eval(minecraft, ">=1.20.5"))
+    val java = if (stonecutter.eval(minecraft, ">=26"))
+        JavaVersion.VERSION_25
+    else if (stonecutter.eval(minecraft, ">=1.20.5"))
         JavaVersion.VERSION_21 else JavaVersion.VERSION_17
     targetCompatibility = java
     sourceCompatibility = java
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    if (stonecutter.eval(minecraft, ">=26")) options.release.set(25)
 }
 
 tasks.build {

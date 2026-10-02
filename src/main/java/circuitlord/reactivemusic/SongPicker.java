@@ -5,7 +5,31 @@ import circuitlord.reactivemusic.config.ModConfig;
 import circuitlord.reactivemusic.entries.RMRuntimeEntry;
 import circuitlord.reactivemusic.mixin.BossBarHudAccessor;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.block.Block;
+//? if >=26 {
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.WinScreen;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.equine.Horse;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.npc.villager.Villager;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.entity.vehicle.minecart.Minecart;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+//?} else {
+/*import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.CreditsScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -17,14 +41,6 @@ import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.entity.vehicle.MinecartEntity;
-
-//? if >=1.20 {
-/*import net.minecraft.registry.Registries;
-import net.minecraft.registry.tag.TagKey;
-*///?} else {
-import net.minecraft.tag.TagKey;
-import net.minecraft.util.registry.Registry;
-//?}
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 
@@ -32,6 +48,15 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+*///?}
+
+//? if >=1.20 && <26 {
+/*import net.minecraft.registry.Registries;
+import net.minecraft.registry.tag.TagKey;
+*///?} else if <1.20 {
+/*import net.minecraft.tag.TagKey;
+import net.minecraft.util.registry.Registry;
+*///?}
 
 import java.util.*;
 
@@ -83,37 +108,71 @@ public final class SongPicker {
         currentBiomeName = "";
         currentDimName = "";
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        //? if >=26 {
+        Minecraft mc = Minecraft.getInstance();
+        //?} else {
+        /*MinecraftClient mc = MinecraftClient.getInstance();
+        *///?}
         if (mc == null)
             return;
 
-        ClientPlayerEntity player = mc.player;
+        //? if >=26 {
+        LocalPlayer player = mc.player;
+        Level world = mc.level;
+        //?} else {
+        /*ClientPlayerEntity player = mc.player;
         World world = mc.world;
+        *///?}
 
 
         songpackEventMap.put(SongpackEventType.MAIN_MENU, player == null || world == null);
-        songpackEventMap.put(SongpackEventType.CREDITS, mc.currentScreen instanceof CreditsScreen);
+        //? if >=26 {
+        songpackEventMap.put(SongpackEventType.CREDITS, mc.gui != null && mc.gui.screen() instanceof WinScreen);
+        //?} else {
+        /*songpackEventMap.put(SongpackEventType.CREDITS, mc.currentScreen instanceof CreditsScreen);
+        *///?}
 
         // Early out if not in-game
         if (player == null || world == null) return;
 
         // World processing
-        BlockPos playerPos = new BlockPos(player.getBlockPos());
+        //? if >=26 {
+        BlockPos playerPos = player.blockPosition();
+        //?} else {
+        /*BlockPos playerPos = new BlockPos(player.getBlockPos());
+        *///?}
         var biome = world.getBiome(playerPos);
 
         // Copied logic out from getIdAsString
-        currentBiomeName = (String)biome.getKey().map((key) -> {
+        //? if >=26 {
+        currentBiomeName = (String)biome.unwrapKey().map((key) -> {
+            return key.identifier().toString();
+        }).orElse("[unregistered]");
+        //?} else {
+        /*currentBiomeName = (String)biome.getKey().map((key) -> {
             return key.getValue().toString();
         }).orElse("[unregistered]");
+        *///?}
 
-        boolean underground = !world.isSkyVisible(playerPos);
+        //? if >=26 {
+        boolean underground = !world.canSeeSky(playerPos);
+        var indimension = world.dimension();
+
+        currentDimName = indimension.identifier().toString();
+        //?} else {
+        /*boolean underground = !world.isSkyVisible(playerPos);
         var indimension = world.getRegistryKey();
 
         currentDimName = indimension.getValue().toString();
+        *///?}
 
         Entity riding = VersionHelper.GetRidingEntity(player);
 
-        long time = world.getTimeOfDay() % 24000;
+        //? if >=26 {
+        long time = world.getOverworldClockTime() % 24000;
+        //?} else {
+        /*long time = world.getTimeOfDay() % 24000;
+        *///?}
         boolean night = time >= 13000 && time < 23000;
         boolean sunset = time >= 12000 && time < 13000;
         boolean sunrise = time >= 23000;
@@ -121,11 +180,13 @@ public final class SongPicker {
 
         // TODO: someone help me I have no idea how to get the name of the world/server but if you know how then put it instead of "saved"
         if (!wasSleeping && player.isSleeping()) {
-            //? if >=1.21.9 {
+            //? if >=26 {
+            ReactiveMusic.config.savedHomePositions.put("saved", player.position());
+            //?} else if >=1.21.9 {
             /*ReactiveMusic.config.savedHomePositions.put("saved", player.getEntityPos());
             *///?} else {
-            ReactiveMusic.config.savedHomePositions.put("saved", player.getPos());
-            //?}
+            /*ReactiveMusic.config.savedHomePositions.put("saved", player.getPos());
+            *///?}
 
             ModConfig.saveConfig();
         }
@@ -137,11 +198,13 @@ public final class SongPicker {
 
         if (ReactiveMusic.config.savedHomePositions.containsKey("saved")) {
 
-            //? if >=1.21.9 {
+            //? if >=26 {
+            Vec3 dist = player.position().subtract(ReactiveMusic.config.savedHomePositions.get("saved"));
+            //?} else if >=1.21.9 {
             /*Vec3d dist = player.getEntityPos().subtract(ReactiveMusic.config.savedHomePositions.get("saved"));
             *///?} else {
-            Vec3d dist = player.getPos().subtract(ReactiveMusic.config.savedHomePositions.get("saved"));
-            //?}
+            /*Vec3d dist = player.getPos().subtract(ReactiveMusic.config.savedHomePositions.get("saved"));
+            *///?}
 
             songpackEventMap.put(SongpackEventType.HOME, dist.length() < 45.0f);
         }
@@ -161,15 +224,38 @@ public final class SongPicker {
         // Actions
 
         songpackEventMap.put(SongpackEventType.DYING, player.getHealth() / player.getMaxHealth() < 0.35);
-        songpackEventMap.put(SongpackEventType.FISHING, player.fishHook != null);
+        //? if >=26 {
+        songpackEventMap.put(SongpackEventType.FISHING, player.fishing != null);
+        //?} else {
+        /*songpackEventMap.put(SongpackEventType.FISHING, player.fishHook != null);
+        *///?}
 
-        songpackEventMap.put(SongpackEventType.MINECART, riding instanceof MinecartEntity);
+        //? if >=26 {
+        songpackEventMap.put(SongpackEventType.MINECART, riding instanceof Minecart);
+        songpackEventMap.put(SongpackEventType.BOAT, riding instanceof Boat);
+        songpackEventMap.put(SongpackEventType.HORSE, riding instanceof Horse);
+        songpackEventMap.put(SongpackEventType.PIG, riding instanceof Pig);
+        //?} else {
+        /*songpackEventMap.put(SongpackEventType.MINECART, riding instanceof MinecartEntity);
         songpackEventMap.put(SongpackEventType.BOAT, riding instanceof BoatEntity);
         songpackEventMap.put(SongpackEventType.HORSE, riding instanceof HorseEntity);
         songpackEventMap.put(SongpackEventType.PIG, riding instanceof PigEntity);
+        *///?}
 
 
-        songpackEventMap.put(SongpackEventType.OVERWORLD, indimension == World.OVERWORLD);
+        //? if >=26 {
+        songpackEventMap.put(SongpackEventType.OVERWORLD, indimension == Level.OVERWORLD);
+        songpackEventMap.put(SongpackEventType.NETHER, indimension == Level.NETHER);
+        songpackEventMap.put(SongpackEventType.END, indimension == Level.END);
+
+
+        songpackEventMap.put(SongpackEventType.UNDERGROUND, indimension == Level.OVERWORLD && underground && playerPos.getY() < 55);
+        songpackEventMap.put(SongpackEventType.DEEP_UNDERGROUND, indimension == Level.OVERWORLD && underground && playerPos.getY() < 15);
+        songpackEventMap.put(SongpackEventType.HIGH_UP, indimension == Level.OVERWORLD && !underground && playerPos.getY() > 128);
+
+        songpackEventMap.put(SongpackEventType.UNDERWATER, player.isUnderWater());
+        //?} else {
+        /*songpackEventMap.put(SongpackEventType.OVERWORLD, indimension == World.OVERWORLD);
         songpackEventMap.put(SongpackEventType.NETHER, indimension == World.NETHER);
         songpackEventMap.put(SongpackEventType.END, indimension == World.END);
 
@@ -179,30 +265,42 @@ public final class SongPicker {
         songpackEventMap.put(SongpackEventType.HIGH_UP, indimension == World.OVERWORLD && !underground && playerPos.getY() > 128);
 
         songpackEventMap.put(SongpackEventType.UNDERWATER, player.isSubmergedInWater());
+        *///?}
 
         // Weather
-        //? if >=1.21.9 {
+        //? if >=26 {
+        songpackEventMap.put(SongpackEventType.RAIN, world.isRaining() && biome.value().getPrecipitationAt(playerPos, world.getSeaLevel()) == Biome.Precipitation.RAIN);
+        songpackEventMap.put(SongpackEventType.SNOW, world.isRaining() && biome.value().getPrecipitationAt(playerPos, world.getSeaLevel()) == Biome.Precipitation.SNOW);
+        //?} else if >=1.21.9 {
         /*songpackEventMap.put(SongpackEventType.RAIN, world.isRaining() && biome.value().getPrecipitation(playerPos, world.getSeaLevel()) == Biome.Precipitation.RAIN);
         songpackEventMap.put(SongpackEventType.SNOW, world.isRaining() && biome.value().getPrecipitation(playerPos, world.getSeaLevel()) == Biome.Precipitation.SNOW);
         *///?} else if >=1.20 {
         /*songpackEventMap.put(SongpackEventType.RAIN, world.isRaining() && biome.value().getPrecipitation(playerPos) == Biome.Precipitation.RAIN);
         songpackEventMap.put(SongpackEventType.SNOW, world.isRaining() && biome.value().getPrecipitation(playerPos) == Biome.Precipitation.SNOW);
         *///?} else {
-        songpackEventMap.put(SongpackEventType.RAIN, world.isRaining() && biome.value().getPrecipitation() == Biome.Precipitation.RAIN);
+        /*songpackEventMap.put(SongpackEventType.RAIN, world.isRaining() && biome.value().getPrecipitation() == Biome.Precipitation.RAIN);
         songpackEventMap.put(SongpackEventType.SNOW, world.isRaining() && biome.value().getPrecipitation() == Biome.Precipitation.SNOW);
-        //?}
+        *///?}
 
         songpackEventMap.put(SongpackEventType.STORM, world.isThundering());
 
 
-        var currentTags = biome.streamTags().toList();
+        //? if >=26 {
+        var currentTags = biome.tags().toList();
+        //?} else {
+        /*var currentTags = biome.streamTags().toList();
+        *///?}
 
         // Update all registered biome tags
         for (TagKey<Biome> tag : biomeTagEventMap.keySet()) {
             boolean found = false;
 
             for (TagKey<Biome> curTag : currentTags) {
-                if (curTag.id().equals(tag.id())) {
+                //? if >=26 {
+                if (curTag.location().equals(tag.location())) {
+                //?} else {
+                /*if (curTag.id().equals(tag.id())) {
+                *///?}
                     found = true;
                     break;
                 }
@@ -215,7 +313,17 @@ public final class SongPicker {
         // process recent damage sources
 
         // remove past sources
-        recentEntityDamageSources.entrySet().removeIf(entry -> entry.getKey() == null || !entry.getKey().isAlive() || world.getTime() - entry.getValue() > TIME_FOR_FORGET_DAMAGE_SOURCE);
+        //? if >=26 {
+        recentEntityDamageSources.entrySet().removeIf(entry -> entry.getKey() == null || !entry.getKey().isAlive() || world.getGameTime() - entry.getValue() > TIME_FOR_FORGET_DAMAGE_SOURCE);
+
+        // add new damage sources
+        var recentDamage = player.getLastDamageSource();
+
+        if (recentDamage != null && recentDamage.getEntity() != null) {
+            recentEntityDamageSources.put(recentDamage.getEntity(), world.getGameTime());
+        }
+        //?} else {
+        /*recentEntityDamageSources.entrySet().removeIf(entry -> entry.getKey() == null || !entry.getKey().isAlive() || world.getTime() - entry.getValue() > TIME_FOR_FORGET_DAMAGE_SOURCE);
 
         // add new damage sources
         var recentDamage = player.getRecentDamageSource();
@@ -223,6 +331,7 @@ public final class SongPicker {
         if (recentDamage != null && recentDamage.getSource() != null) {
             recentEntityDamageSources.put(recentDamage.getSource(), world.getTime());
         }
+        *///?}
 
 
 
@@ -235,7 +344,17 @@ public final class SongPicker {
             double radiusXZ = 30.0;
             double radiusY = 15.0;
 
-            Box box = new Box(player.getX() - radiusXZ, player.getY() - radiusY, player.getZ() - radiusXZ,
+            //? if >=26 {
+            AABB box = new AABB(player.getX() - radiusXZ, player.getY() - radiusY, player.getZ() - radiusXZ,
+                    player.getX() + radiusXZ, player.getY() + radiusY, player.getZ() + radiusXZ);
+
+            List<Villager> nearbyVillagerCheck = world.getEntities(EntityTypeTest.forClass(Villager.class), box, entity -> entity != null);
+
+            for (Villager villagerEntity : nearbyVillagerCheck) {
+                villagerCount++;
+            }
+            //?} else {
+            /*Box box = new Box(player.getX() - radiusXZ, player.getY() - radiusY, player.getZ() - radiusXZ,
                     player.getX() + radiusXZ, player.getY() + radiusY, player.getZ() + radiusXZ);
 
             List<VillagerEntity> nearbyVillagerCheck = world.getEntitiesByClass(VillagerEntity.class, box, entity -> entity != null);
@@ -243,15 +362,22 @@ public final class SongPicker {
             for (VillagerEntity villagerEntity : nearbyVillagerCheck) {
                 villagerCount++;
             }
+            *///?}
 
             songpackEventMap.put(SongpackEventType.VILLAGE, villagerCount > 0);
 
         }
 
         {
-            List<HostileEntity> nearbyHostile = world.getEntitiesByClass(HostileEntity.class,
+            //? if >=26 {
+            List<Monster> nearbyHostile = world.getEntities(EntityTypeTest.forClass(Monster.class),
                     GetBoxAroundPlayer(player, 12.f, 6.f),
                     entity -> entity != null);
+            //?} else {
+            /*List<HostileEntity> nearbyHostile = world.getEntitiesByClass(HostileEntity.class,
+                    GetBoxAroundPlayer(player, 12.f, 6.f),
+                    entity -> entity != null);
+            *///?}
 
             songpackEventMap.put(SongpackEventType.NEARBY_MOBS, nearbyHostile.size() >= 1);
 
@@ -266,7 +392,20 @@ public final class SongPicker {
         // try to get boss bars
         boolean bossBarActive = false;
 
-        if (mc.inGameHud != null && mc.inGameHud.getBossBarHud() != null) {
+        //? if >=26 {
+        if (mc.gui != null && mc.gui.hud != null && mc.gui.hud.getBossOverlay() != null) {
+            try {
+
+                var bossBars = ((BossBarHudAccessor) mc.gui.hud.getBossOverlay()).getBossBars();
+
+                if (!bossBars.isEmpty()) {
+                    bossBarActive = true;
+                }
+            } catch (Exception e) {
+            }
+        }
+        //?} else {
+        /*if (mc.inGameHud != null && mc.inGameHud.getBossBarHud() != null) {
             try {
 
                 var bossBars = ((BossBarHudAccessor) mc.inGameHud.getBossBarHud()).getBossBars();
@@ -277,6 +416,7 @@ public final class SongPicker {
             } catch (Exception e) {
             }
         }
+        *///?}
 
 
         songpackEventMap.put(SongpackEventType.BOSS, bossBarActive);
@@ -291,9 +431,15 @@ public final class SongPicker {
 
         int RADIUS = 25;
 
-        MinecraftClient mc = MinecraftClient.getInstance();
+        //? if >=26 {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        Level world = mc.level;
+        //?} else {
+        /*MinecraftClient mc = MinecraftClient.getInstance();
         ClientPlayerEntity player = mc.player;
         World world = mc.world;
+        *///?}
         if (player == null || world == null)
             return;
 
@@ -326,11 +472,19 @@ public final class SongPicker {
 
             if (queuedToPrintBlockCounter) {
 
-                player.sendMessage(Text.of("[ReactiveMusic]: Logging Block Counter map! Radius: " + RADIUS), false);
+                //? if >=26 {
+                player.sendSystemMessage(Component.literal("[ReactiveMusic]: Logging Block Counter map! Radius: " + RADIUS));
+                //?} else {
+                /*player.sendMessage(Text.of("[ReactiveMusic]: Logging Block Counter map! Radius: " + RADIUS), false);
+                *///?}
 
                 blockCounterMap.object2IntEntrySet().stream()
                         .sorted((first, second) -> Integer.compare(second.getIntValue(), first.getIntValue()))
-                        .forEach(entry -> player.sendMessage(Text.of(entry.getKey() + ": " + entry.getIntValue()), false));
+                        //? if >=26 {
+                        .forEach(entry -> player.sendSystemMessage(Component.literal(entry.getKey() + ": " + entry.getIntValue())));
+                //?} else {
+                /*.forEach(entry -> player.sendMessage(Text.of(entry.getKey() + ": " + entry.getIntValue()), false));
+                *///?}
 
                 queuedToPrintBlockCounter = false;
 
@@ -340,11 +494,19 @@ public final class SongPicker {
             cachedBlockChecker = blockCounterMap;
             blockCounterMap = completedScan;
             blockCounterMap.clear();
-            cachedBlockCounterOrigin = player.getBlockPos();
+            //? if >=26 {
+            cachedBlockCounterOrigin = player.blockPosition();
+            //?} else {
+            /*cachedBlockCounterOrigin = player.getBlockPos();
+            *///?}
 
         }
 
-        BlockPos.Mutable mutablePos = new BlockPos.Mutable();
+        //? if >=26 {
+        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+        //?} else {
+        /*BlockPos.Mutable mutablePos = new BlockPos.Mutable();
+        *///?}
 
         for (int y = -RADIUS; y <= RADIUS; y++) {
             for (int z = -RADIUS; z <= RADIUS; z++) {
@@ -384,22 +546,33 @@ public final class SongPicker {
         String id = BLOCK_ID_CACHE.get(block);
         if (id != null) return id;
 
-        //? if >=1.20 {
+        //? if >=26 {
+        id = BuiltInRegistries.BLOCK.getKey(block).toString();
+        //?} else if >=1.20 {
         /*id = Registries.BLOCK.getId(block).toString();
         *///?} else {
-        id = Registry.BLOCK.getId(block).toString();
-        //?}
+        /*id = Registry.BLOCK.getId(block).toString();
+        *///?}
         BLOCK_ID_CACHE.put(block, id);
         return id;
     }
 
 
-    private static Box GetBoxAroundPlayer(ClientPlayerEntity player, float radiusXZ, float radiusY) {
+    //? if >=26 {
+    private static AABB GetBoxAroundPlayer(LocalPlayer player, float radiusXZ, float radiusY) {
+
+        return new AABB(player.getX() - radiusXZ, player.getY() - radiusY, player.getZ() - radiusXZ,
+                player.getX() + radiusXZ, player.getY() + radiusY, player.getZ() + radiusXZ);
+
+    }
+    //?} else {
+    /*private static Box GetBoxAroundPlayer(ClientPlayerEntity player, float radiusXZ, float radiusY) {
 
         return new Box(player.getX() - radiusXZ, player.getY() - radiusY, player.getZ() - radiusXZ,
                 player.getX() + radiusXZ, player.getY() + radiusY, player.getZ() + radiusXZ);
 
     }
+    *///?}
 
 
     public static void initialize() {

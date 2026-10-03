@@ -43,6 +43,10 @@ java {
 
 tasks.withType<JavaCompile>().configureEach {
     if (stonecutter.eval(minecraft, ">=26")) options.release.set(25)
+
+    // rm_javazoom ships a legacy AWT applet wrapper that needs java.applet, which is
+    // gone from the JDKs used to build this project. Nothing references it.
+    exclude("rm_javazoom/jl/player/PlayerApplet.java")
 }
 
 tasks.build {

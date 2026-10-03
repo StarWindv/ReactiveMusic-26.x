@@ -47,7 +47,9 @@ public class ReactiveMusicForge {
         //? if >=26 {
         FMLClientSetupEvent.getBus(FMLJavaModLoadingContext.get().getModBusGroup())
                 .addListener(this::onClientSetup);
-        MinecraftForge.EVENT_BUS.register(this);
+        // Forge 26.x replaced the annotation-scanning event bus. Events backed by an
+        // EventBus are registered directly on it instead of via MinecraftForge.EVENT_BUS.
+        RegisterClientCommandsEvent.BUS.addListener(this::onRegisterClientCommands);
 
         MinecraftForge.registerConfigScreen(
                 (mc, parent) -> ModConfig.createScreen(parent)

@@ -95,6 +95,9 @@ if (noRemap) {
         archiveClassifier.set("")
     }
 } else {
+    tasks.named("shadowJar", AbstractArchiveTask::class.java) {
+        archiveClassifier.set("dev-shadow")
+    }
     tasks.named("remapJar", RemapJarTask::class.java) {
         injectAccessWidener = true
         input = tasks.shadowJar.get().archiveFile
@@ -105,7 +108,8 @@ if (noRemap) {
 
 tasks.shadowJar {
     configurations = listOf(shadowBundle)
-    archiveClassifier = "dev-shadow"
+    // Set inside the remap branch above: "dev-shadow" when the remapped jar is the
+    // published artifact, empty when the shaded jar is used directly.
     exclude("fabric.mod.json", "architectury.common.json")
 }
 

@@ -16,7 +16,16 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.phys.Vec3;
-//?} else if >=1.20 {
+//?} else if >=1.21.9 {
+/*import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Util;
+import net.minecraft.util.math.Vec3d;
+*///?} else if >=1.20 {
 /*import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -32,9 +41,6 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.Vec3d;
-*///?}
-//? if >=1.21.9 && <26 {
-/*import net.minecraft.client.gui.Click;
 *///?}
 
 import java.io.IOException;
@@ -113,12 +119,12 @@ public class ModConfig {
         private int detailsScroll;
 
         private VanillaConfigScreen(Screen parent, int page, int selectedIndex) {
-        //? if >=26 {
-        super(Component.literal("Reactive Music"));
-        //?} else {
-        /*super(Text.literal("Reactive Music"));
-        *///?}
-        this.parent = parent;
+            //? if >=26 {
+            super(Component.literal("Reactive Music"));
+            //?} else {
+            /*super(Text.literal("Reactive Music"));
+            *///?}
+            this.parent = parent;
             this.page = page;
             RMSongpackLoader.fetchAvailableSongpacks();
             this.selectedIndex = selectedIndex >= 0 ? selectedIndex : defaultSelectedIndex();
@@ -138,6 +144,7 @@ public class ModConfig {
         }
         *///?}
 
+        //? if >=26 {
         @Override
         protected void init() {
             int centerX = this.width / 2;
@@ -145,7 +152,6 @@ public class ModConfig {
             int controlWidth = Math.min(150, Math.max(100, this.width - controlX - 20));
             ModConfig config = getConfig();
 
-            //? if >=26 {
             addRenderableWidget(button(controlX, 42, controlWidth, BUTTON_HEIGHT, enumText(config.musicDelayLength2), b -> {
                 config.musicDelayLength2 = next(config.musicDelayLength2, MusicDelayLength.values());
                 saveConfig();
@@ -453,6 +459,67 @@ public class ModConfig {
             graphics.fill(left, top, left + 1, bottom, PANEL_BORDER);
             graphics.fill(right - 1, top, right, bottom, PANEL_BORDER);
         }
+
+        private List<FormattedCharSequence> detailsLines(int width) {
+            ArrayList<FormattedCharSequence> lines = new ArrayList<>();
+            SongpackZip songpack = selectedSongpack();
+            if (songpack == null) {
+                addWrapped(lines, "No songpacks found.", width);
+                return lines;
+            }
+
+            addWrapped(lines, songpackName(songpack), width);
+            addWrapped(lines, "Status: " + statusText(songpack), width);
+            addBlank(lines);
+
+            if (songpack.errorString != null && !songpack.errorString.isEmpty()) {
+                addWrapped(lines, songpack.blockLoading ? "Error:" : "Warnings:", width);
+                addWrapped(lines, songpack.errorString.trim(), width);
+                addBlank(lines);
+            }
+
+            String description = songpack.config != null && songpack.config.description != null ? songpack.config.description.trim() : "";
+            if (!description.isEmpty()) {
+                addWrapped(lines, "Description:", width);
+                addWrapped(lines, description, width);
+                addBlank(lines);
+            }
+
+            String credits = songpack.config != null && songpack.config.credits != null ? songpack.config.credits.trim() : "";
+            if (!credits.isEmpty()) {
+                addWrapped(lines, "Credits:", width);
+                addWrapped(lines, credits, width);
+                addBlank(lines);
+            }
+
+            if (songpack.path != null) {
+                addWrapped(lines, "Path: " + songpack.path, width);
+            }
+
+            return lines;
+        }
+
+        private void addWrapped(List<FormattedCharSequence> lines, String value, int width) {
+            if (value == null || value.isEmpty()) {
+                addBlank(lines);
+                return;
+            }
+            for (String line : value.split("\\R", -1)) {
+                if (line.isEmpty()) {
+                    addBlank(lines);
+                } else {
+                    lines.addAll(this.font.split(Component.literal(line), width));
+                }
+            }
+        }
+
+        private void addBlank(List<FormattedCharSequence> lines) {
+            lines.add(Component.literal(" ").getVisualOrderText());
+        }
+
+        private int maxDetailsScroll(List<FormattedCharSequence> lines, int visibleLines) {
+            return Math.max(0, lines.size() - visibleLines);
+        }
         //?} else if >=1.20 {
         /*private void renderContent(DrawContext context) {
             int centerX = this.width / 2;
@@ -520,6 +587,67 @@ public class ModConfig {
             context.fill(left, bottom - 1, right, bottom, PANEL_BORDER);
             context.fill(left, top, left + 1, bottom, PANEL_BORDER);
             context.fill(right - 1, top, right, bottom, PANEL_BORDER);
+        }
+
+        private List<OrderedText> detailsLines(int width) {
+            ArrayList<OrderedText> lines = new ArrayList<>();
+            SongpackZip songpack = selectedSongpack();
+            if (songpack == null) {
+                addWrapped(lines, "No songpacks found.", width);
+                return lines;
+            }
+
+            addWrapped(lines, songpackName(songpack), width);
+            addWrapped(lines, "Status: " + statusText(songpack), width);
+            addBlank(lines);
+
+            if (songpack.errorString != null && !songpack.errorString.isEmpty()) {
+                addWrapped(lines, songpack.blockLoading ? "Error:" : "Warnings:", width);
+                addWrapped(lines, songpack.errorString.trim(), width);
+                addBlank(lines);
+            }
+
+            String description = songpack.config != null && songpack.config.description != null ? songpack.config.description.trim() : "";
+            if (!description.isEmpty()) {
+                addWrapped(lines, "Description:", width);
+                addWrapped(lines, description, width);
+                addBlank(lines);
+            }
+
+            String credits = songpack.config != null && songpack.config.credits != null ? songpack.config.credits.trim() : "";
+            if (!credits.isEmpty()) {
+                addWrapped(lines, "Credits:", width);
+                addWrapped(lines, credits, width);
+                addBlank(lines);
+            }
+
+            if (songpack.path != null) {
+                addWrapped(lines, "Path: " + songpack.path, width);
+            }
+
+            return lines;
+        }
+
+        private void addWrapped(List<OrderedText> lines, String value, int width) {
+            if (value == null || value.isEmpty()) {
+                addBlank(lines);
+                return;
+            }
+            for (String line : value.split("\\R", -1)) {
+                if (line.isEmpty()) {
+                    addBlank(lines);
+                } else {
+                    lines.addAll(this.textRenderer.wrapLines(Text.literal(line), width));
+                }
+            }
+        }
+
+        private void addBlank(List<OrderedText> lines) {
+            lines.add(Text.literal(" ").asOrderedText());
+        }
+
+        private int maxDetailsScroll(List<OrderedText> lines, int visibleLines) {
+            return Math.max(0, lines.size() - visibleLines);
         }
         *///?} else {
         /*private void renderContent(MatrixStack matrices) {
@@ -590,30 +718,9 @@ public class ModConfig {
             fill(matrices, left, top, left + 1, bottom, PANEL_BORDER);
             fill(matrices, right - 1, top, right, bottom, PANEL_BORDER);
         }
-        *///?}
 
-        private boolean scrollDetails(double mouseX, double mouseY, double amount) {
-            if (mouseX < detailsLeft() || mouseX > detailsRight() || mouseY < SONGPACK_START_Y - 4 || mouseY > detailsBottom()) {
-                return false;
-            }
-
-            int visibleLines = Math.max(1, (detailsBottom() - (SONGPACK_START_Y - 4) - 16) / 10);
-            //? if >=26 {
-            List<FormattedCharSequence> lines = detailsLines(detailsRight() - detailsLeft() - 16);
-            //?} else {
-            /*List<OrderedText> lines = detailsLines(detailsRight() - detailsLeft() - 16);
-            *///?}
-            detailsScroll = Math.max(0, Math.min(detailsScroll - (int) Math.signum(amount) * 3, maxDetailsScroll(lines, visibleLines)));
-            return true;
-        }
-
-        //? if >=26 {
-        private List<FormattedCharSequence> detailsLines(int width) {
-            ArrayList<FormattedCharSequence> lines = new ArrayList<>();
-        //?} else {
-        /*private List<OrderedText> detailsLines(int width) {
+        private List<OrderedText> detailsLines(int width) {
             ArrayList<OrderedText> lines = new ArrayList<>();
-        *///?}
             SongpackZip songpack = selectedSongpack();
             if (songpack == null) {
                 addWrapped(lines, "No songpacks found.", width);
@@ -651,30 +758,7 @@ public class ModConfig {
             return lines;
         }
 
-        //? if >=26 {
-        private void addWrapped(List<FormattedCharSequence> lines, String value, int width) {
-            if (value == null || value.isEmpty()) {
-                addBlank(lines);
-                return;
-            }
-            for (String line : value.split("\\R", -1)) {
-                if (line.isEmpty()) {
-                    addBlank(lines);
-                } else {
-                    lines.addAll(this.font.split(Component.literal(line), width));
-                }
-            }
-        }
-
-        private void addBlank(List<FormattedCharSequence> lines) {
-            lines.add(Component.literal(" ").getVisualOrderText());
-        }
-
-        private int maxDetailsScroll(List<FormattedCharSequence> lines, int visibleLines) {
-            return Math.max(0, lines.size() - visibleLines);
-        }
-        //?} else {
-        /*private void addWrapped(List<OrderedText> lines, String value, int width) {
+        private void addWrapped(List<OrderedText> lines, String value, int width) {
             if (value == null || value.isEmpty()) {
                 addBlank(lines);
                 return;
@@ -696,6 +780,21 @@ public class ModConfig {
             return Math.max(0, lines.size() - visibleLines);
         }
         *///?}
+
+        private boolean scrollDetails(double mouseX, double mouseY, double amount) {
+            if (mouseX < detailsLeft() || mouseX > detailsRight() || mouseY < SONGPACK_START_Y - 4 || mouseY > detailsBottom()) {
+                return false;
+            }
+
+            int visibleLines = Math.max(1, (detailsBottom() - (SONGPACK_START_Y - 4) - 16) / 10);
+            //? if >=26 {
+            List<FormattedCharSequence> lines = detailsLines(detailsRight() - detailsLeft() - 16);
+            //?} else {
+            /*List<OrderedText> lines = detailsLines(detailsRight() - detailsLeft() - 16);
+            *///?}
+            detailsScroll = Math.max(0, Math.min(detailsScroll - (int) Math.signum(amount) * 3, maxDetailsScroll(lines, visibleLines)));
+            return true;
+        }
 
         private int rowsPerPage() {
             return Math.max(1, (this.height - SONGPACK_START_Y - 56) / ROW_HEIGHT);

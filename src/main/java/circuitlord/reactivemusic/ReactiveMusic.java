@@ -679,15 +679,18 @@ public class ReactiveMusic {
 				/*Vec3d pos = new Vec3d(soundInstance.getX(), soundInstance.getY(), soundInstance.getZ());
 				*///?}
 
-				if (Minecraft.getInstance().player != null) {
-					//? if >=26 {
-					Vec3 dist = Minecraft.getInstance().player.position().subtract(pos);
-					//?} else if >=1.21.9 {
-					/*Vec3d dist = MinecraftClient.getInstance().player.getEntityPos().subtract(pos);
-					*///?} else {
-					/*Vec3d dist = MinecraftClient.getInstance().player.getPos().subtract(pos);
-					*///?}
+				//? if >=26 {
+				Vec3 dist = Minecraft.getInstance().player == null ? null
+						: Minecraft.getInstance().player.position().subtract(pos);
+				//?} else if >=1.21.9 {
+				/*Vec3d dist = MinecraftClient.getInstance().player == null ? null
+						: MinecraftClient.getInstance().player.getEntityPos().subtract(pos);
+				*///?} else {
+				/*Vec3d dist = MinecraftClient.getInstance().player == null ? null
+						: MinecraftClient.getInstance().player.getPos().subtract(pos);
+				*///?}
 
+				if (dist != null) {
 					if (dist.length() > 65.f) {
 						continue;
 					}
@@ -750,7 +753,11 @@ public class ReactiveMusic {
 
         LOGGER.info(debugString);
 
+        //? if >=26 {
         if (!chatLoggingEnabled || Minecraft.getInstance() == null || Minecraft.getInstance().player == null)
+        //?} else {
+        /*if (!chatLoggingEnabled || MinecraftClient.getInstance() == null || MinecraftClient.getInstance().player == null)
+        *///?}
             return;
 
         //? if >=26 {

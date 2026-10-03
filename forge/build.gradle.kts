@@ -49,6 +49,7 @@ repositories {
 dependencies {
     minecraft("com.mojang:minecraft:$minecraft")
     if (noRemap) {
+        // 26.x ships unobfuscated, so only the annotations are needed from the loader.
         "implementation"("net.fabricmc:fabric-loader:${common.mod.dep("fabric_loader")}")
     } else {
         "mappings"("net.fabricmc:yarn:$minecraft+build.${common.mod.dep("yarn_build")}:v2")
@@ -69,6 +70,18 @@ loom {
         isIdeConfigGenerated = true
         runDir = "../../../run/$minecraft/$loader"
         vmArgs("-Dmixin.debug.export=true", "-Dreactivemusic.performanceLogging=true")
+    }
+}
+
+if (noRemap) {
+    // Loom adds Fabric's Mixin and MixinExtras builds to the run classpath for 26.x.
+    // Fabric's MixinExtras registers a Mixin service that requires Fabric's Mixin, which
+    // Forge does not ship, so the launcher aborts before the game starts. Forge uses its
+    // own dev.architectury:mixin-patched and mixinextras-forge instead.
+    tasks.withType<JavaExec>().configureEach {
+        classpath = classpath.filter { file ->
+            !file.name.startsWith("sponge-mixin-") && !file.name.startsWith("mixinextras-fabric-")
+        }
     }
 }
 
@@ -96,6 +109,9 @@ if (noRemap) {
         archiveClassifier.set("")
     }
 } else {
+    tasks.named("shadowJar", AbstractArchiveTask::class.java) {
+        archiveClassifier.set("dev-shadow")
+    }
     tasks.named("remapJar", RemapJarTask::class.java) {
         injectAccessWidener = true
         input = tasks.shadowJar.get().archiveFile
@@ -106,7 +122,8 @@ if (noRemap) {
 
 tasks.shadowJar {
     configurations = listOf(shadowBundle)
-    archiveClassifier = "dev-shadow"
+    // Set inside the remap branch below: "dev-shadow" when the remapped jar is the
+    // published artifact, empty when the shaded jar is used directly.
     exclude("fabric.mod.json", "architectury.common.json")
 }
 

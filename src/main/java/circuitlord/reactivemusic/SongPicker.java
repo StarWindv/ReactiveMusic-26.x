@@ -94,6 +94,141 @@ public final class SongPicker {
 
     public static boolean wasSleeping = false;
 
+    // Underground detection reads sky light in the single block the player's head occupies.
+    // That block is always air (the player stands in it), so it answers exactly "can the sky
+    // reach where I am". Measured values: open ground 15, under a leaf block 14, under a
+    // one-block-thick roof 14, inside a cave 0, so 0 is the dividing line.
+    //
+    // Sampling a volume instead was tried twice and abandoned both times: a ring around the
+    // player lands inside the walls of a hole or the terrain of a slope and reports a roof
+    // that is not overhead (a freshly dug 1x1 shaft reads as a cave because its own walls
+    // count), and sampling higher up escapes through a thin roof. A collision-based "is the
+    // block above solid" test also failed, because leaves have a collision box.
+    private static final int UNDERGROUND_MAX_HEAD_SKY_LIGHT = 0;
+
+    // Last logged result, so debug mode only reports flips instead of every tick.
+    private static Boolean lastLoggedUnderground = null;
+
+    // Latest underground result, kept so /reactivemusic marker can report it on demand.
+    private static Boolean lastUnderground = null;
+
+    /**
+     * Sky light in the block the player's head occupies. Zero means nothing overhead lets sky
+     * light through, which is what "underground" means for this check.
+     */
+    //? if >=26 {
+    private static int headSkyLight(Level world, BlockPos playerPos) {
+        return world.getBrightness(net.minecraft.world.level.LightLayer.SKY,
+                new BlockPos(playerPos.getX(), playerPos.getY() + 1, playerPos.getZ()));
+    }
+    //?} else {
+    /*private static int headSkyLight(World world, BlockPos playerPos) {
+        return world.getLightLevel(net.minecraft.world.LightType.SKY,
+                new BlockPos(playerPos.getX(), playerPos.getY() + 1, playerPos.getZ()));
+    }
+    *///?}
+
+    /** A spot counts as underground when no sky light reaches the player's own head. */
+    private static boolean isUndergroundSampled(int headSkyLight) {
+        return headSkyLight <= UNDERGROUND_MAX_HEAD_SKY_LIGHT;
+    }
+
+    // Diagnostic only, written by /reactivemusic marker and by the debug-mode flip log. It
+    // dumps raw sky light around the player so a bad underground decision can be judged from
+    // numbers instead of guessed at: the column straight up (dy 1..4) and the ring around it
+    // (radius 1, four faces, dy 1..4). Prints as col[15,15,15,15] ring[0,0,0,0,...].
+    // Not used by the underground decision itself.
+    //? if >=26 {
+    private static String describeSkyProbe(Level world, BlockPos playerPos) {
+        StringBuilder column = new StringBuilder();
+        for (int dy = 1; dy <= 4; dy++) {
+            if (column.length() > 0) column.append(',');
+            column.append(world.getBrightness(net.minecraft.world.level.LightLayer.SKY,
+                    new BlockPos(playerPos.getX(), playerPos.getY() + dy, playerPos.getZ())));
+        }
+
+        StringBuilder ring = new StringBuilder();
+        int[][] faces = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+        for (int dy = 1; dy <= 4; dy++) {
+            for (int[] face : faces) {
+                if (ring.length() > 0) ring.append(',');
+                ring.append(world.getBrightness(net.minecraft.world.level.LightLayer.SKY, new BlockPos(
+                        playerPos.getX() + face[0], playerPos.getY() + dy, playerPos.getZ() + face[1])));
+            }
+        }
+
+        return "col[" + column + "] ring[" + ring + "]";
+    }
+    //?} else {
+    /*private static String describeSkyProbe(World world, BlockPos playerPos) {
+        StringBuilder column = new StringBuilder();
+        for (int dy = 1; dy <= 4; dy++) {
+            if (column.length() > 0) column.append(',');
+            column.append(world.getLightLevel(net.minecraft.world.LightType.SKY,
+                    new BlockPos(playerPos.getX(), playerPos.getY() + dy, playerPos.getZ())));
+        }
+
+        StringBuilder ring = new StringBuilder();
+        int[][] faces = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
+        for (int dy = 1; dy <= 4; dy++) {
+            for (int[] face : faces) {
+                if (ring.length() > 0) ring.append(',');
+                ring.append(world.getLightLevel(net.minecraft.world.LightType.SKY, new BlockPos(
+                        playerPos.getX() + face[0], playerPos.getY() + dy, playerPos.getZ() + face[1])));
+            }
+        }
+
+        return "col[" + column + "] ring[" + ring + "]";
+    }
+    *///?}
+
+    /**
+     * One line describing the current underground decision and the numbers behind it. Also
+     * written by the {@code /reactivemusic marker} command, so a command can annotate the log
+     * with the state at that exact moment instead of relying on a later flip to report it.
+     */
+    public static String describeUndergroundState() {
+        //? if >=26 {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc == null ? null : mc.player;
+        Level world = mc == null ? null : mc.level;
+        //?} else {
+        /*MinecraftClient mc = MinecraftClient.getInstance();
+        ClientPlayerEntity player = mc == null ? null : mc.player;
+        World world = mc == null ? null : mc.world;
+        *///?}
+
+        if (player == null || world == null) {
+            return "using=(no world)";
+        }
+
+        //? if >=26 {
+        BlockPos playerPos = player.blockPosition();
+        //?} else {
+        /*BlockPos playerPos = player.getBlockPos();
+        *///?}
+        int headSky = headSkyLight(world, playerPos);
+        boolean singlePoint = !isSkyVisibleAt(world, playerPos);
+        boolean sampled = isUndergroundSampled(headSky);
+
+        return String.format(java.util.Locale.ROOT,
+                "using=%s singlePoint=%s sampled=%s headSky=%d y=%.2f pos=%d,%d,%d %s",
+                lastUnderground, singlePoint, sampled, headSky,
+                player.getY(),
+                playerPos.getX(), playerPos.getY(), playerPos.getZ(),
+                describeSkyProbe(world, playerPos));
+    }
+
+    //? if >=26 {
+    private static boolean isSkyVisibleAt(Level world, BlockPos pos) {
+        return world.canSeeSky(pos);
+    }
+    //?} else {
+    /*private static boolean isSkyVisibleAt(World world, BlockPos pos) {
+        return world.isSkyVisible(pos);
+    }
+    *///?}
+
     public static void registerBiomeTag(TagKey<Biome> tag) {
         if (!biomeTagEventMap.containsKey(tag)) {
             biomeTagEventMap.put(tag, false);
@@ -155,16 +290,30 @@ public final class SongPicker {
         *///?}
 
         //? if >=26 {
-        boolean underground = !world.canSeeSky(playerPos);
         var indimension = world.dimension();
 
         currentDimName = indimension.identifier().toString();
         //?} else {
-        /*boolean underground = !world.isSkyVisible(playerPos);
-        var indimension = world.getRegistryKey();
+        /*var indimension = world.getRegistryKey();
 
         currentDimName = indimension.getValue().toString();
         *///?}
+
+        boolean underground = isUndergroundSampled(headSkyLight(world, playerPos));
+        lastUnderground = underground;
+
+        // Only log when the result actually flips. This runs on every client tick, and tick
+        // rates can be pushed far past 20/s (Carpet's `tick sprint` reaches thousands), so
+        // logging unconditionally would grow the log by gigabytes while idling. Use
+        // /reactivemusic marker to record the state at a specific moment instead.
+        // The null check must come first: while debug mode is off this never runs, so the
+        // field stays null and would unbox to an NPE the moment debug mode is switched on.
+        if (lastLoggedUnderground == null || underground != lastLoggedUnderground) {
+            lastLoggedUnderground = underground;
+            if (ReactiveMusic.config.debugModeEnabled) {
+                ReactiveMusic.doDebugLog("Cover check: " + describeUndergroundState() + " dim=" + currentDimName);
+            }
+        }
 
         Entity riding = VersionHelper.GetRidingEntity(player);
 

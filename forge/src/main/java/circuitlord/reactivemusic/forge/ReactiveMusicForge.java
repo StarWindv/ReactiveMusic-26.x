@@ -34,10 +34,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 *///?}
 
 //? if >=26 {
+import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 //?} else {
-/*import static net.minecraft.server.command.CommandManager.literal;
+/*import static net.minecraft.server.command.CommandManager.argument;
+import static net.minecraft.server.command.CommandManager.literal;
 *///?}
+import static com.mojang.brigadier.arguments.StringArgumentType.getString;
+import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
 
 @Mod("reactivemusic")
 public class ReactiveMusicForge {
@@ -92,6 +96,20 @@ public class ReactiveMusicForge {
                             SongPicker.queuedToPrintBlockCounter = true;
                             return 1;
                         })
+                )
+
+                // Writes a marker straight to the log, so a run can be annotated without
+                // opening the chat. Reports the underground state at that moment too, so a
+                // marker is enough to record what was happening without waiting for a flip.
+                // Usage: /reactivemusic marker <text>
+                .then(literal("marker")
+                        .then(argument("text", greedyString())
+                                .executes(context -> {
+                                    ReactiveMusic.LOGGER.info("[ReactiveMusic] MARKER: " + getString(context, "text")
+                                            + " | " + SongPicker.describeUndergroundState());
+                                    return 1;
+                                })
+                        )
                 )
 
                 .then(literal("toggleSoundEventLogging")

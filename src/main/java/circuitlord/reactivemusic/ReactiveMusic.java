@@ -747,7 +747,7 @@ public class ReactiveMusic {
 
 
 
-    private static void doDebugLog(String text) {
+    public static void doDebugLog(String text) {
 
         var debugString = "[ReactiveMusic]: " + text;
 

@@ -27,9 +27,17 @@ public class ReactiveMusicFabric implements ClientModInitializer {
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> literal(String name) {
         return ClientCommands.literal(name);
     }
+
+    private static <T> com.mojang.brigadier.builder.RequiredArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource, T> argument(String name, com.mojang.brigadier.arguments.ArgumentType<T> type) {
+        return ClientCommands.argument(name, type);
+    }
     //?} else {
     /*private static com.mojang.brigadier.builder.LiteralArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource> literal(String name) {
         return ClientCommandManager.literal(name);
+    }
+
+    private static <T> com.mojang.brigadier.builder.RequiredArgumentBuilder<net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource, T> argument(String name, com.mojang.brigadier.arguments.ArgumentType<T> type) {
+        return ClientCommandManager.argument(name, type);
     }
     *///?}
 
@@ -57,6 +65,21 @@ public class ReactiveMusicFabric implements ClientModInitializer {
                             SongPicker.queuedToPrintBlockCounter = true;
                             return 1;
                         })
+                )
+
+                // Writes a marker straight to the log, so a run can be annotated without
+                // opening the chat. Reports the underground state at that moment too, so a
+                // marker is enough to record what was happening without waiting for a flip.
+                // Usage: /reactivemusic marker <text>
+                .then(literal("marker")
+                        .then(argument("text", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                .executes(context -> {
+                                    ReactiveMusic.LOGGER.info("[ReactiveMusic] MARKER: "
+                                            + com.mojang.brigadier.arguments.StringArgumentType.getString(context, "text")
+                                            + " | " + SongPicker.describeUndergroundState());
+                                    return 1;
+                                })
+                        )
                 )
 
                 .then(literal("toggleSoundEventLogging")
